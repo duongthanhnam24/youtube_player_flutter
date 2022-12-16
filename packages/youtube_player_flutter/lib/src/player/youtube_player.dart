@@ -2,11 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:youtube_player_flutter/src/player/adaptive_webview_controller.dart';
 
 import '../enums/thumbnail_quality.dart';
 import '../utils/errors.dart';
@@ -205,7 +208,7 @@ class YoutubePlayer extends StatefulWidget {
 
 class _YoutubePlayerState extends State<YoutubePlayer> {
   late YoutubePlayerController controller;
-  late InAppWebViewController? _cachedWebController;
+  late AdaptiveWebviewController? _cachedWebController;
   late double _aspectRatio;
   bool _initialLoad = true;
 
@@ -242,6 +245,10 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
           controller.value
               .copyWith(toggleFullScreen: false, isControlsVisible: false),
         );
+        if (Platform.isWindows) {
+          WindowManager.instance.setFullScreen(controller.value.isFullScreen);
+          WindowManager.instance.setResizable(!controller.value.isFullScreen);
+        } 
         if (controller.value.isFullScreen) {
           SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
           SystemChrome.setPreferredOrientations([
@@ -378,7 +385,7 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
         clipBehavior: Clip.none,
         children: [
           Transform.scale(
-            scale: controller.value.isFullScreen
+            scale: controller.value.isFullScreen && (Platform.isAndroid || Platform.isIOS)
                 ? (1 / _aspectRatio * MediaQuery.of(context).size.width) /
                     MediaQuery.of(context).size.height
                 : 1,

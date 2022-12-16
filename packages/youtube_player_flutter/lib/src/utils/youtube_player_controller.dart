@@ -2,12 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../enums/playback_rate.dart';
 import '../enums/player_state.dart';
+import '../player/adaptive_webview_controller.dart';
 import '../utils/youtube_meta_data.dart';
 import '../widgets/progress_bar.dart';
 import 'youtube_player_flags.dart';
@@ -71,7 +74,7 @@ class YoutubePlayerValue {
   final int errorCode;
 
   /// Reports the [WebViewController].
-  final InAppWebViewController? webViewController;
+  final AdaptiveWebviewController? webViewController;
 
   /// Returns true is player has errors.
   bool get hasError => errorCode != 0;
@@ -103,7 +106,7 @@ class YoutubePlayerValue {
     double? playbackRate,
     String? playbackQuality,
     int? errorCode,
-    InAppWebViewController? webViewController,
+    AdaptiveWebviewController? webViewController,
     bool? isDragging,
     YoutubeMetaData? metaData,
     bool? toggleFullScreen
@@ -177,7 +180,7 @@ class YoutubePlayerController extends ValueNotifier<YoutubePlayerValue> {
     if (value.isReady) {
       value.webViewController?.evaluateJavascript(source: methodString);
     } else {
-      print('The controller is not ready for method calls.');
+      print('The controller is not ready for method $methodString calls.');
     }
   }
 
@@ -287,6 +290,10 @@ class YoutubePlayerController extends ValueNotifier<YoutubePlayerValue> {
   void toggleFullScreenMode({bool isSingleVideo = true}) {
     if (isSingleVideo) {
       updateValue(value.copyWith(isFullScreen: !value.isFullScreen));
+        if (Platform.isWindows) {
+          WindowManager.instance.setFullScreen(value.isFullScreen);
+          WindowManager.instance.setResizable(!value.isFullScreen);
+        } 
         if (value.isFullScreen) {
           SystemChrome.setEnabledSystemUIOverlays([]);
           SystemChrome.setPreferredOrientations([
